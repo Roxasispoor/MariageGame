@@ -38,6 +38,13 @@ const Admin = () => {
     { id: 'amour', name: 'AMOUR ❤️', bonus: 15 },
   ]);
 
+  // État pour Devine l'image
+  const [guessName, setGuessName] = useState('');
+  const [guessDescription, setGuessDescription] = useState('');
+  const [guessType, setGuessType] = useState('image'); // 'image' ou 'audio'
+  const [guessFileName, setGuessFileName] = useState('');
+  const [guessAnswer, setGuessAnswer] = useState('');
+
   const handleCreateTeam = async (e) => {
     e.preventDefault();
     try {
@@ -166,6 +173,48 @@ const Admin = () => {
       setCrosswordWords([{ word: '', definition: '' }]);
       setCrosswordName('');
       setCrosswordDescription('');
+      
+      setTimeout(() => setMessage(''), 15000);
+    } catch (error) {
+      console.error('Admin - Erreur complète:', error);
+      setMessage(`❌ Erreur lors de la création : ${error.message}`);
+    }
+  };
+
+  const handleCreateProgressiveGuess = async () => {
+    try {
+      if (!guessAnswer.trim()) {
+        setMessage('❌ Veuillez entrer la réponse correcte');
+        return;
+      }
+
+      if (!guessFileName.trim()) {
+        setMessage('❌ Veuillez entrer le nom du fichier');
+        return;
+      }
+
+      const gameId = `progressive-guess_${Date.now()}`;
+      
+      // Construire le chemin local
+      const folder = guessType === 'image' ? 'images' : 'audio';
+      const fileUrl = `/games/${folder}/${guessFileName}`;
+      
+      await createGame(gameId, 'progressive-guess', {
+        type: guessType,
+        imageUrl: guessType === 'image' ? fileUrl : null,
+        audioUrl: guessType === 'audio' ? fileUrl : null,
+        answer: guessAnswer.trim(),
+        name: guessName || `Devine ${guessType === 'image' ? 'l\'image' : 'le son'} ${new Date().toLocaleDateString()}`,
+        description: guessDescription || ''
+      });
+
+      setMessage(`✅ Jeu créé !\n\nN'oubliez pas de placer le fichier "${guessFileName}" dans le dossier:\npublic/games/${folder}/`);
+      
+      // Reset
+      setGuessName('');
+      setGuessDescription('');
+      setGuessFileName('');
+      setGuessAnswer('');
       
       setTimeout(() => setMessage(''), 15000);
     } catch (error) {
@@ -509,6 +558,127 @@ const Admin = () => {
               <p className="text-sm text-gray-600 mt-2">
                 💡 Minimum 3 mots. La grille sera générée automatiquement.
               </p>
+            </div>
+
+            {/* Devine l'image / le son */}
+            <div className="border-2 border-orange-200 rounded-lg p-4">
+              <h3 className="font-bold text-lg mb-3 text-orange-800">🔍 Devine l'image/son</h3>
+              
+              <div className="space-y-3 mb-3">
+                <input
+                  type="text"
+                  placeholder="Nom du jeu (ex: Devine le Monument)"
+                  value={guessName}
+                  onChange={(e) => setGuessName(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Description (optionnelle)"
+                  value={guessDescription}
+                  onChange={(e) => setGuessDescription(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+                />
+
+                {/* Type de média */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setGuessType('image')}
+                    className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
+                      guessType === 'image'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    🖼️ Image
+                  </button>
+                  <button
+                    onClick={() => setGuessType('audio')}
+                    className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
+                      guessType === 'audio'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    🎵 Son/Musique
+                  </button>
+                </div>
+
+                {/* Nom du fichier */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom du fichier {guessType === 'image' ? 'image' : 'audio'} *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={guessType === 'image' ? 'Ex: tour-eiffel.jpg' : 'Ex: marseillaise.mp3'}
+                    value={guessFileName}
+                    onChange={(e) => setGuessFileName(e.target.value)}
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    📁 Placez ce fichier dans : <code className="bg-gray-100 px-1 rounded">public/games/{guessType === 'image' ? 'images' : 'audio'}/</code>
+                  </p>
+                  {guessFileName && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        ✅ Chemin final : <code>/games/{guessType === 'image' ? 'images' : 'audio'}/{guessFileName}</code>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Réponse */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Réponse(s) correcte(s) *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Tour Eiffel, Eiffel, La Tour Eiffel"
+                    value={guessAnswer}
+                    onChange={(e) => setGuessAnswer(e.target.value)}
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 Séparez plusieurs réponses possibles par des virgules.<br/>
+                    La validation est intelligente : ignore les articles (le, la, l'), accepte les variantes.
+                  </p>
+                  {guessAnswer && (
+                    <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                      <p className="text-sm text-green-800">
+                        <strong>Réponses acceptées :</strong>
+                      </p>
+                      <ul className="text-xs text-green-700 mt-1">
+                        {guessAnswer.split(',').map((ans, i) => (
+                          <li key={i}>✓ {ans.trim()}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={handleCreateProgressiveGuess}
+                disabled={!guessAnswer.trim() || !guessFileName.trim()}
+                className="w-full py-3 px-6 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                🔍 Créer le jeu
+              </button>
+
+              <p className="text-sm text-gray-600 mt-2">
+                💡 Barème : 100→80→60→50→40→30→20→15→10→5 Triceracoins selon cases révélées
+              </p>
+              
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong>📝 Instructions :</strong><br/>
+                  1. Entrez le nom exact du fichier (ex: monument.jpg)<br/>
+                  2. Créez le jeu<br/>
+                  3. Placez votre fichier dans <code className="bg-white px-1 rounded">public/games/{guessType === 'image' ? 'images' : 'audio'}/</code>
+                </p>
+              </div>
             </div>
 
             {/* Chaîne de mots */}

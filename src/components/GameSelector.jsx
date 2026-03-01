@@ -89,6 +89,19 @@ const GameSelector = ({ gameType, teamId, onSelect, onBack }) => {
       };
     }
     
+    if (gameType === 'progressive-guess') {
+      // Pour devine l'image, basé sur la complétion
+      if (progressData.progress?.completed) {
+        return { percent: 100, completed: true };
+      }
+      
+      const revealed = progressData.progress?.revealedCells?.length || 0;
+      return {
+        percent: Math.round((revealed / 9) * 100),
+        completed: false
+      };
+    }
+    
     return { percent: 0, completed: false };
   };
 
@@ -125,6 +138,7 @@ const GameSelector = ({ gameType, teamId, onSelect, onBack }) => {
     switch (gameType) {
       case 'sudoku': return '🧩 Sudoku';
       case 'crossword': return '📝 Mots Croisés';
+      case 'progressive-guess': return '🔍 Devine';
       default: return 'Jeux';
     }
   };
@@ -146,10 +160,21 @@ const GameSelector = ({ gameType, teamId, onSelect, onBack }) => {
       <div className="space-y-3">
         {games.map((game) => {
           const { percent, completed } = calculateProgress(game, gamesProgress[game.id]);
-          console.log(`GameSelector - Jeu ${game.id}: ${percent}% (completed: ${completed})`, {
-            game,
-            progressData: gamesProgress[game.id]
-          });
+          
+          // Déterminer l'icône et le type pour progressive-guess
+          const getGameIcon = () => {
+            if (gameType === 'progressive-guess') {
+              return game.state?.type === 'audio' ? '🎵' : '🖼️';
+            }
+            return null;
+          };
+
+          const getGameTypeText = () => {
+            if (gameType === 'progressive-guess') {
+              return game.state?.type === 'audio' ? 'Musique' : 'Image';
+            }
+            return null;
+          };
           
           return (
             <button
@@ -159,7 +184,8 @@ const GameSelector = ({ gameType, teamId, onSelect, onBack }) => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 text-left">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    {getGameIcon() && <span className="text-2xl">{getGameIcon()}</span>}
                     <h3 className="font-bold text-lg text-[#63006A] group-hover:text-[#F9AC30] transition-colors">
                       {game.name || `${getGameTypeLabel()} #${game.id.slice(-4)}`}
                     </h3>
@@ -169,6 +195,10 @@ const GameSelector = ({ gameType, teamId, onSelect, onBack }) => {
                       </span>
                     )}
                   </div>
+                  
+                  {getGameTypeText() && (
+                    <p className="text-xs text-gray-500 ml-10">Type: {getGameTypeText()}</p>
+                  )}
                   
                   {game.description && (
                     <p className="text-sm text-gray-600">{game.description}</p>

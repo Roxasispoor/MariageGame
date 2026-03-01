@@ -8,6 +8,7 @@ import GameSelector from '../components/GameSelector';
 import CoopSudoku from '../components/CoopSudokuTeam';
 import Cruciverbist from '../components/CruciverbistTeam';
 import InfiniteCraft from '../components/InfiniteCraft';
+import ProgressiveGuess from '../components/ProgressiveGuess';
 
 const TeamView = ({ teamId }) => {
   const { team, loading } = useTeam(teamId);
@@ -73,6 +74,9 @@ const TeamView = ({ teamId }) => {
           {selectedGameType === 'crossword' && (
             <Cruciverbist gameId={selectedGame.id} teamId={teamId} />
           )}
+          {selectedGameType === 'progressive-guess' && (
+            <ProgressiveGuess gameId={selectedGame.id} teamId={teamId} />
+          )}
           {selectedGameType === 'alchemy' && (
             <InfiniteCraft teamId={teamId} />
           )}
@@ -136,6 +140,15 @@ const TeamView = ({ teamId }) => {
               description="Complétez la grille de mots"
               completed={false}
               onClick={() => setSelectedGameType('crossword')}
+            />
+
+            {/* Devine l'image / la musique */}
+            <GameButton
+              icon="🔍"
+              title="Devine l'image/musique"
+              description="Devinez ce qui se cache"
+              completed={false}
+              onClick={() => setSelectedGameType('progressive-guess')}
             />
 
             {/* Alchimie - pas besoin de sélecteur, directement */}
