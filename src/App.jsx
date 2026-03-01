@@ -32,22 +32,31 @@ function App() {
     setLoginError('');
     
     try {
+      console.log('🔍 Tentative de connexion avec:', teamNameInput.trim());
+      
       // Import dynamique pour éviter les problèmes de chargement
       const { getTeamByName } = await import('./services/gameService');
+      console.log('✅ gameService importé');
+      
       const team = await getTeamByName(teamNameInput.trim());
+      console.log('📡 Réponse Firebase:', team);
       
       if (team) {
+        console.log('✅ Équipe trouvée:', team);
         setSelectedTeamId(team.id);
         // Sauvegarder dans localStorage
         localStorage.setItem('weddingGame_teamId', team.id);
         localStorage.setItem('weddingGame_teamName', team.name);
         setCurrentView('team');
       } else {
+        console.log('❌ Équipe non trouvée dans Firebase');
         setLoginError('❌ Équipe non trouvée. Vérifiez le nom.');
       }
     } catch (error) {
-      console.error('Erreur de connexion:', error);
-      setLoginError('❌ Erreur de connexion. Vérifiez votre configuration Firebase.');
+      console.error('❌ Erreur de connexion complète:', error);
+      console.error('Type d\'erreur:', error.name);
+      console.error('Message:', error.message);
+      setLoginError(`❌ Erreur de connexion : ${error.message}. Vérifiez que uBlock Origin est désactivé sur ce site.`);
     } finally {
       setIsLoading(false);
     }
@@ -61,6 +70,19 @@ function App() {
     } else {
       alert('❌ Mot de passe incorrect');
       setAdminPassword('');
+    }
+  };
+
+  const testFirebaseConnection = async () => {
+    console.log('🧪 Test de connexion Firebase...');
+    try {
+      const { getLeaderboard } = await import('./services/gameService');
+      const teams = await getLeaderboard();
+      console.log('✅ Firebase fonctionne ! Équipes trouvées:', teams);
+      alert(`✅ Firebase OK !\n\n${teams.length} équipe(s) trouvée(s):\n${teams.map(t => `- ${t.name}`).join('\n')}`);
+    } catch (error) {
+      console.error('❌ Firebase ne fonctionne pas:', error);
+      alert(`❌ Erreur Firebase:\n${error.message}\n\n⚠️ Vérifiez:\n1. uBlock Origin désactivé sur localhost\n2. Configuration Firebase dans firebase.js\n3. Console (F12) pour plus de détails`);
     }
   };
 
@@ -202,6 +224,16 @@ function App() {
                 <p>💡 L'admin crée les équipes</p>
                 <p>💡 Les joueurs se connectent avec le nom de leur équipe</p>
                 <p>💡 Tous les scores sont en temps réel</p>
+              </div>
+
+              {/* Bouton de test Firebase */}
+              <div className="mt-6">
+                <button
+                  onClick={testFirebaseConnection}
+                  className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 transition-all"
+                >
+                  🧪 Tester connexion Firebase
+                </button>
               </div>
             </div>
           </div>

@@ -30,7 +30,10 @@ const RansomProgress = () => {
     return null;
   }
 
-  const percentage = Math.min((totalScore / config.ransomGoal) * 100, 100);
+  // Calculer le total avec l'offset (voleur/donateur)
+  const globalOffset = config.globalOffset || 0;
+  const effectiveTotal = Math.max(0, totalScore + globalOffset);
+  const percentage = Math.min((effectiveTotal / config.ransomGoal) * 100, 100);
   const isCompleted = config.ransomCompleted || percentage >= 100;
 
   return (
@@ -60,7 +63,7 @@ const RansomProgress = () => {
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex items-center gap-2 bg-white/90 px-3 py-1 rounded-full">
-            <Triceracoin amount={totalScore} size="sm" textColor="text-[#63006A]" />
+            <Triceracoin amount={effectiveTotal} size="sm" textColor="text-[#63006A]" />
             <span className="text-lg font-bold text-[#63006A]">
               / {config.ransomGoal.toLocaleString()}
             </span>
@@ -75,8 +78,21 @@ const RansomProgress = () => {
         </p>
         {!isCompleted && (
           <p className="text-sm text-gray-600 mt-1">
-            Plus que <Triceracoin amount={config.ransomGoal - totalScore} size="sm" textColor="text-[#63006A]" /> !
+            Plus que <Triceracoin amount={config.ransomGoal - effectiveTotal} size="sm" textColor="text-[#63006A]" /> !
           </p>
+        )}
+        
+        {/* Indicateur d'offset (voleur/donateur) */}
+        {globalOffset !== 0 && (
+          <div className={`mt-3 p-2 rounded-lg inline-block ${
+            globalOffset < 0 ? 'bg-red-100' : 'bg-green-100'
+          }`}>
+            <p className={`text-sm font-bold ${
+              globalOffset < 0 ? 'text-red-800' : 'text-green-800'
+            }`}>
+              {globalOffset < 0 ? '🦹 Voleur' : '🎅 Donateur'}: {globalOffset > 0 ? '+' : ''}{globalOffset} 🦖
+            </p>
+          </div>
         )}
       </div>
 

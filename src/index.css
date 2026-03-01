@@ -30,3 +30,23 @@ body {
   border-color: #F9AC30;
 }
 
+/* Animations pour les événements */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.event-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.event-bounce-in {
+  animation: bounce-in 0.5s ease-out;
+}

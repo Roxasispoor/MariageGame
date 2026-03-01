@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createTeam, createCode, createGame, setRansomGoal, createCraftConfig } from '../services/gameService';
+import { createTeam, createCode, createGame, setRansomGoal, createCraftConfig, createGlobalEvent, migrateOldTeams } from '../services/gameService';
 import { generateCruciverbist } from '../utils/cruciverbistGenerator';
 import Leaderboard from '../components/Leaderboard';
 import RansomProgress from '../components/RansomProgress';
@@ -44,6 +44,11 @@ const Admin = () => {
   const [guessType, setGuessType] = useState('image'); // 'image' ou 'audio'
   const [guessFileName, setGuessFileName] = useState('');
   const [guessAnswer, setGuessAnswer] = useState('');
+
+  // État pour les événements globaux
+  const [eventType, setEventType] = useState('thief'); // 'thief' ou 'donor'
+  const [eventAmount, setEventAmount] = useState(50);
+  const [eventMessage, setEventMessage] = useState('Un voleur a volé du butin !');
 
   const handleCreateTeam = async (e) => {
     e.preventDefault();
@@ -223,6 +228,48 @@ const Admin = () => {
     }
   };
 
+  const handleMigrateTeams = async () => {
+    if (!confirm('⚠️ Cette opération va mettre à jour toutes les équipes anciennes.\n\nContinuer ?')) {
+      return;
+    }
+    
+    try {
+      setMessage('⏳ Migration en cours...');
+      const result = await migrateOldTeams();
+      setMessage(`✅ Migration terminée !\n\n${result.total} équipe(s) au total\n${result.migrated} équipe(s) migrée(s)\n${result.errors} erreur(s)\n\nLes équipes sont maintenant compatibles avec la nouvelle version.`);
+      setTimeout(() => setMessage(''), 15000);
+    } catch (error) {
+      console.error('Erreur migration:', error);
+      setMessage(`❌ Erreur lors de la migration : ${error.message}`);
+    }
+  };
+
+  const handleTriggerEvent = async () => {
+    try {
+      if (!eventMessage.trim()) {
+        setMessage('❌ Veuillez entrer un message pour l\'événement');
+        return;
+      }
+
+      if (!eventAmount || eventAmount === 0) {
+        setMessage('❌ Veuillez entrer un montant différent de 0');
+        return;
+      }
+
+      const amount = eventType === 'thief' ? -Math.abs(eventAmount) : Math.abs(eventAmount);
+      
+      await createGlobalEvent(eventType, amount, eventMessage);
+
+      const eventName = eventType === 'thief' ? 'Voleur' : 'Donateur';
+      setMessage(`✅ Événement "${eventName}" déclenché !\n\n${eventMessage}\nMontant: ${amount > 0 ? '+' : ''}${amount} Triceracoins\n\nToutes les équipes verront la notification.`);
+      
+      setTimeout(() => setMessage(''), 10000);
+    } catch (error) {
+      console.error('Admin - Erreur événement:', error);
+      setMessage(`❌ Erreur : ${error.message}`);
+    }
+  };
+
   const handleCreateWordChain = async () => {
     try {
       if (!wordChainStart.trim() || !wordChainEnd.trim()) {
@@ -288,12 +335,21 @@ const Admin = () => {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-8 text-center">
-          🎮 Administration du Jeu
-        </h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold text-white text-center flex-1">
+            🎮 Administration du Jeu
+          </h1>
+          <button
+            onClick={handleMigrateTeams}
+            className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-bold hover:bg-yellow-400 transition-all text-sm"
+            title="Mettre à jour les anciennes équipes pour compatibilité"
+          >
+            🔄 Migrer équipes
+          </button>
+        </div>
 
         {message && (
-          <div className="mb-6 p-4 bg-white/90 backdrop-blur rounded-lg shadow-xl text-center font-bold">
+          <div className="mb-6 p-4 bg-white/90 backdrop-blur rounded-lg shadow-xl text-center font-bold whitespace-pre-line">
             {message}
           </div>
         )}
@@ -343,6 +399,128 @@ const Admin = () => {
               💰 Définir l'objectif
             </button>
           </form>
+        </div>
+
+        {/* Événements Globaux (Voleur / Donateur) */}
+        <div className="bg-white/90 backdrop-blur rounded-lg shadow-xl p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">
+            🎭 Déclencher un événement
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Ajustez la progression en volant ou en ajoutant des Triceracoins au butin collectif
+          </p>
+
+          <div className="space-y-4">
+            {/* Type d'événement */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type d'événement
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEventType('thief');
+                    setEventMessage('Un voleur a volé du butin !');
+                  }}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    eventType === 'thief'
+                      ? 'bg-red-100 border-red-500 text-red-800'
+                      : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="text-3xl mb-1">🦹</div>
+                  <div className="font-bold">Voleur</div>
+                  <div className="text-xs">Retirer des Triceracoins</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEventType('donor');
+                    setEventMessage('Un généreux donateur est apparu !');
+                  }}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    eventType === 'donor'
+                      ? 'bg-green-100 border-green-500 text-green-800'
+                      : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="text-3xl mb-1">🎅</div>
+                  <div className="font-bold">Donateur</div>
+                  <div className="text-xs">Ajouter des Triceracoins</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Montant */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Montant de Triceracoins
+              </label>
+              <input
+                type="number"
+                value={eventAmount}
+                onChange={(e) => setEventAmount(parseInt(e.target.value))}
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#F9AC30]"
+                min="1"
+                placeholder="50"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {eventType === 'thief' ? '❌ Sera retiré' : '✅ Sera ajouté'} au butin collectif
+              </p>
+            </div>
+
+            {/* Message personnalisé */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Message à afficher aux équipes
+              </label>
+              <input
+                type="text"
+                value={eventMessage}
+                onChange={(e) => setEventMessage(e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#F9AC30]"
+                placeholder={eventType === 'thief' ? 'Un voleur a volé du butin !' : 'Un généreux donateur est apparu !'}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Ce message apparaîtra en popup pour toutes les équipes
+              </p>
+            </div>
+
+            {/* Aperçu */}
+            {eventMessage && (
+              <div className={`p-4 rounded-lg border-2 ${
+                eventType === 'thief' 
+                  ? 'bg-red-50 border-red-300' 
+                  : 'bg-green-50 border-green-300'
+              }`}>
+                <p className="text-sm font-bold mb-1">Aperçu de la notification :</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{eventType === 'thief' ? '🦹' : '🎅'}</span>
+                  <span className={eventType === 'thief' ? 'text-red-800' : 'text-green-800'}>
+                    {eventMessage}
+                  </span>
+                  <span className={`font-bold ${eventType === 'thief' ? 'text-red-800' : 'text-green-800'}`}>
+                    {eventType === 'thief' ? '-' : '+'}{eventAmount} 🦖
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Bouton de déclenchement */}
+            <button
+              onClick={handleTriggerEvent}
+              disabled={!eventMessage.trim() || !eventAmount}
+              className={`w-full py-3 px-6 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                eventType === 'thief'
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+              }`}
+            >
+              {eventType === 'thief' ? '🦹 Déclencher le voleur' : '🎅 Déclencher le donateur'}
+            </button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-6">

@@ -66,7 +66,10 @@ export const subscribeToGameConfig = (callback) => {
 // Vérifier et marquer la rançon comme payée
 export const checkRansomCompletion = async (totalScore) => {
   const config = await getGameConfig();
-  if (!config.ransomCompleted && totalScore >= config.ransomGoal) {
+  const globalOffset = config.globalOffset || 0;
+  const effectiveTotal = Math.max(0, totalScore + globalOffset);
+  
+  if (!config.ransomCompleted && effectiveTotal >= config.ransomGoal) {
     const configRef = doc(configCollection, 'game');
     await setDoc(configRef, {
       ransomCompleted: true,
@@ -103,15 +106,49 @@ export const getTeam = async (teamId) => {
 
 // Récupérer une équipe par nom
 export const getTeamByName = async (teamName) => {
-  const q = query(teamsCollection, where('name', '==', teamName));
-  const snapshot = await getDocs(q);
+  console.log('🔍 getTeamByName - Recherche de:', teamName);
   
-  if (snapshot.empty) {
-    return null;
+  try {
+    const q = query(teamsCollection, where('name', '==', teamName));
+    console.log('📡 Requête Firebase créée');
+    
+    const snapshot = await getDocs(q);
+    console.log('📦 Snapshot reçu, empty:', snapshot.empty, 'size:', snapshot.size);
+    
+    if (snapshot.empty) {
+      console.log('❌ Aucune équipe trouvée avec ce nom');
+      return null;
+    }
+    
+    const teamDoc = snapshot.docs[0];
+    const teamData = { 
+      id: teamDoc.id, 
+      score: 0,
+      codesUsed: [],
+      ...teamDoc.data() 
+    };
+    
+    // Migration : ajouter les champs manquants
+    if (teamData.score === undefined || teamData.codesUsed === undefined) {
+      console.log('🔧 Migration de l\'équipe en cours...');
+      const teamRef = doc(teamsCollection, teamDoc.id);
+      const updates = {};
+      if (teamData.score === undefined) updates.score = 0;
+      if (teamData.codesUsed === undefined) updates.codesUsed = [];
+      
+      await updateDoc(teamRef, updates);
+      console.log('✅ Équipe migrée:', updates);
+      
+      // Mettre à jour les données locales
+      Object.assign(teamData, updates);
+    }
+    
+    console.log('✅ Équipe trouvée:', teamData);
+    return teamData;
+  } catch (error) {
+    console.error('❌ Erreur dans getTeamByName:', error);
+    throw error;
   }
-  
-  const doc = snapshot.docs[0];
-  return { id: doc.id, ...doc.data() };
 };
 
 // Écouter les changements d'une équipe en temps réel
@@ -456,9 +493,40 @@ export const completeGame = async (gameId, winningTeamId, points) => {
 
 // Récupérer le classement
 export const getLeaderboard = async () => {
-  const q = query(teamsCollection, orderBy('score', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  try {
+    // Essayer d'abord avec orderBy (nouvelle structure)
+    const q = query(teamsCollection, orderBy('score', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      score: 0, // Valeur par défaut
+      ...doc.data() 
+    }));
+  } catch (error) {
+    console.warn('⚠️ Erreur orderBy, récupération sans tri:', error);
+    // Fallback : récupérer toutes les équipes sans tri
+    const snapshot = await getDocs(teamsCollection);
+    const teams = snapshot.docs.map(doc => ({ 
+      id: doc.id,
+      score: 0,
+      codesUsed: [],
+      ...doc.data()
+    }));
+    
+    // Trier manuellement
+    teams.sort((a, b) => (b.score || 0) - (a.score || 0));
+    
+    // Migration : ajouter le champ score si manquant
+    for (const team of teams) {
+      if (team.score === undefined) {
+        const teamRef = doc(teamsCollection, team.id);
+        await updateDoc(teamRef, { score: 0, codesUsed: [] });
+        console.log(`✅ Migration équipe ${team.name}: score ajouté`);
+      }
+    }
+    
+    return teams;
+  }
 };
 
 // Écouter le classement en temps réel
@@ -468,6 +536,52 @@ export const subscribeToLeaderboard = (callback) => {
     const teams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(teams);
   });
+};
+
+/**
+ * MIGRATION - Mettre à jour les anciennes équipes
+ */
+export const migrateOldTeams = async () => {
+  console.log('🔄 Début de la migration des équipes...');
+  const snapshot = await getDocs(teamsCollection);
+  let migrated = 0;
+  let errors = 0;
+  
+  for (const teamDoc of snapshot.docs) {
+    try {
+      const data = teamDoc.data();
+      const updates = {};
+      
+      // Ajouter score si manquant
+      if (data.score === undefined) {
+        updates.score = 0;
+      }
+      
+      // Ajouter codesUsed si manquant
+      if (data.codesUsed === undefined) {
+        updates.codesUsed = [];
+      }
+      
+      // Ajouter gameProgress si manquant (pour la nouvelle structure)
+      if (data.gameProgress === undefined) {
+        updates.gameProgress = {};
+      }
+      
+      // Appliquer les mises à jour si nécessaire
+      if (Object.keys(updates).length > 0) {
+        const teamRef = doc(teamsCollection, teamDoc.id);
+        await updateDoc(teamRef, updates);
+        console.log(`✅ Migré: ${data.name}`, updates);
+        migrated++;
+      }
+    } catch (error) {
+      console.error(`❌ Erreur migration ${teamDoc.id}:`, error);
+      errors++;
+    }
+  }
+  
+  console.log(`✅ Migration terminée: ${migrated} équipe(s) migrée(s), ${errors} erreur(s)`);
+  return { migrated, errors, total: snapshot.size };
 };
 
 /**
@@ -593,5 +707,72 @@ export const listAvailableGames = async (gameType) => {
   const q = query(gamesCollection, where('type', '==', gameType));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+/**
+ * ÉVÉNEMENTS GLOBAUX (Voleur / Donateur)
+ */
+
+// Créer un événement global et ajuster l'offset global
+export const createGlobalEvent = async (type, amount, message) => {
+  const eventId = `event_${Date.now()}`;
+  const eventRef = doc(collection(db, 'events'), eventId);
+  
+  // Sauvegarder l'événement
+  await setDoc(eventRef, {
+    type, // 'thief' ou 'donor'
+    amount,
+    message,
+    createdAt: new Date(),
+    acknowledged: {} // { teamId: true, ... }
+  });
+  
+  // Ajuster l'offset global (pas les scores des équipes)
+  const configRef = doc(configCollection, 'game');
+  const configSnap = await getDoc(configRef);
+  
+  if (configSnap.exists()) {
+    const currentOffset = configSnap.data().globalOffset || 0;
+    await updateDoc(configRef, {
+      globalOffset: currentOffset + amount
+    });
+  } else {
+    // Créer la config avec l'offset
+    await setDoc(configRef, {
+      globalOffset: amount,
+      ransomGoal: 1000,
+      ransomMessage: "Payez la rançon pour libérer les mariés !",
+      ransomCompleted: false
+    });
+  }
+  
+  return eventId;
+};
+
+// Écouter les événements non-acquittés pour une équipe
+export const subscribeToUnacknowledgedEvents = (teamId, callback) => {
+  const eventsCollection = collection(db, 'events');
+  
+  return onSnapshot(eventsCollection, (snapshot) => {
+    const unacknowledged = [];
+    
+    snapshot.forEach((doc) => {
+      const event = doc.data();
+      // Si l'équipe n'a pas encore vu cet événement
+      if (!event.acknowledged || !event.acknowledged[teamId]) {
+        unacknowledged.push({ id: doc.id, ...event });
+      }
+    });
+    
+    callback(unacknowledged);
+  });
+};
+
+// Marquer un événement comme vu par une équipe
+export const acknowledgeEvent = async (eventId, teamId) => {
+  const eventRef = doc(collection(db, 'events'), eventId);
+  await updateDoc(eventRef, {
+    [`acknowledged.${teamId}`]: true
+  });
 };
 
