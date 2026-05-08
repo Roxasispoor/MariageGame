@@ -25,10 +25,6 @@ const Admin = () => {
     { word: '', definition: '' }
   ]);
   
-  // État pour la chaîne de mots
-  const [wordChainStart, setWordChainStart] = useState('');
-  const [wordChainEnd, setWordChainEnd] = useState('');
-  
   // État pour la configuration craft
   const [craftBasePoints, setCraftBasePoints] = useState(5);
   const [craftBonusElements, setCraftBonusElements] = useState([
@@ -266,32 +262,6 @@ const Admin = () => {
       setTimeout(() => setMessage(''), 10000);
     } catch (error) {
       console.error('Admin - Erreur événement:', error);
-      setMessage(`❌ Erreur : ${error.message}`);
-    }
-  };
-
-  const handleCreateWordChain = async () => {
-    try {
-      if (!wordChainStart.trim() || !wordChainEnd.trim()) {
-        setMessage('❌ Veuillez entrer un mot de départ et un mot d\'arrivée');
-        return;
-      }
-
-      const gameId = `wordchain_${Date.now()}`;
-      
-      await createGame(gameId, 'wordchain', {
-        startWord: wordChainStart.toUpperCase().trim(),
-        endWord: wordChainEnd.toUpperCase().trim(),
-        chain: [wordChainStart.toUpperCase().trim()],
-        completed: false
-      });
-
-      setMessage(`✅ Chaîne de mots créée !\n\n📋 ID : ${gameId}\n\nDépart : ${wordChainStart.toUpperCase()}\nArrivée : ${wordChainEnd.toUpperCase()}`);
-      setWordChainStart('');
-      setWordChainEnd('');
-      setTimeout(() => setMessage(''), 10000);
-    } catch (error) {
-      console.error('Admin - Erreur:', error);
       setMessage(`❌ Erreur : ${error.message}`);
     }
   };
@@ -859,50 +829,6 @@ const Admin = () => {
               </div>
             </div>
 
-            {/* Chaîne de mots */}
-            <div className="border-2 border-green-200 rounded-lg p-4">
-              <h3 className="font-bold text-lg mb-3 text-green-800">Chaîne de Mots</h3>
-              
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mot de départ
-                  </label>
-                  <input
-                    type="text"
-                    value={wordChainStart}
-                    onChange={(e) => setWordChainStart(e.target.value)}
-                    placeholder="Ex: CHAT"
-                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 uppercase"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mot d'arrivée
-                  </label>
-                  <input
-                    type="text"
-                    value={wordChainEnd}
-                    onChange={(e) => setWordChainEnd(e.target.value)}
-                    placeholder="Ex: VOITURE"
-                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 uppercase"
-                  />
-                </div>
-
-                <button
-                  onClick={handleCreateWordChain}
-                  disabled={!wordChainStart.trim() || !wordChainEnd.trim()}
-                  className="w-full py-2 px-4 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  🔗 Créer la chaîne
-                </button>
-              </div>
-
-              <p className="text-sm text-gray-600 mt-2">
-                💡 Les joueurs doivent relier les mots par associations sémantiques. Jeu personnel (non collaboratif).
-              </p>
-            </div>
           </div>
         </div>
 

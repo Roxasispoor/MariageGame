@@ -390,27 +390,6 @@ export const updateGameState = async (gameId, gameType, newState) => {
       'state.validatedWords': newState.validatedWords,
       lastUpdate: new Date()
     });
-  } else if (gameType === 'wordchain') {
-    // Chaîne de mots : mettre à jour la chaîne et le statut
-    const updateData = {
-      lastUpdate: new Date()
-    };
-    
-    if (newState.chain) {
-      updateData['state.chain'] = newState.chain;
-    }
-    
-    if (newState.completed !== undefined) {
-      updateData['completed'] = newState.completed;
-      if (newState.completedAt) {
-        updateData['state.completedAt'] = newState.completedAt;
-      }
-      if (newState.teamId) {
-        updateData['state.teamId'] = newState.teamId;
-      }
-    }
-    
-    await updateDoc(gameRef, updateData);
   } else {
     // Autres types de jeux
     await updateDoc(gameRef, {
@@ -460,11 +439,8 @@ export const subscribeToGame = (gameId, callback) => {
           console.log('subscribeToGame - Nouvelle structure avec words directement');
           // Rien à faire, les données sont déjà bonnes
         }
-      } else if (data.type === 'wordchain') {
-        console.log('subscribeToGame - Type wordchain détecté');
-        // Pas de conversion nécessaire pour wordchain
       }
-      
+
       callback({ id: doc.id, ...data });
     } else {
       console.error('subscribeToGame - Document n\'existe pas');

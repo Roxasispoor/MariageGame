@@ -27,3 +27,8 @@ dist-ssr
 .firebase/
 .firebaserc
 firebase-debug.log
+
+# Environment variables (credentials secrets)
+.env
+.env.local
+.env.*.local
