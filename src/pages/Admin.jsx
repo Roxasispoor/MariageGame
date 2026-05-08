@@ -8,15 +8,16 @@ const Admin = () => {
   const [teamName, setTeamName] = useState('');
   const [teamColor, setTeamColor] = useState('#FF69B4');
   const [codeValue, setCodeValue] = useState('');
-  const [codePoints, setCodePoints] = useState(10);
+  const [codePoints, setCodePoints] = useState(15);
   const [codeDescription, setCodeDescription] = useState('');
-  const [ransomGoal, setRansomGoalInput] = useState(1000);
+  const [ransomGoal, setRansomGoalInput] = useState(5000);
   const [ransomMessage, setRansomMessage] = useState('Payez la rançon pour libérer les mariés !');
   const [message, setMessage] = useState('');
   
   // État pour le Sudoku
   const [sudokuName, setSudokuName] = useState('');
   const [sudokuDescription, setSudokuDescription] = useState('');
+  const [sudokuSize, setSudokuSize] = useState(9);
   
   // État pour les mots fléchés
   const [crosswordName, setCrosswordName] = useState('');
@@ -25,6 +26,12 @@ const Admin = () => {
     { word: '', definition: '' }
   ]);
   
+  // État pour le Quiz Généalogie
+  const [quizName, setQuizName] = useState('Quiz Généalogie');
+  const [quizQuestions, setQuizQuestions] = useState([
+    { question: '', answer: '', points: 20 },
+  ]);
+
   // État pour la configuration craft
   const [craftBasePoints, setCraftBasePoints] = useState(5);
   const [craftBonusElements, setCraftBonusElements] = useState([
@@ -74,28 +81,39 @@ const Admin = () => {
   };
 
   const handleCreateSudoku = async () => {
-    try {
-      console.log('Admin - Création du Sudoku...');
-      // Grille initiale 4x4 avec quelques chiffres
-      const initialGrid = [
+    const grids = {
+      4: [
         [1, 0, 0, 4],
         [0, 0, 1, 0],
         [0, 3, 0, 0],
         [4, 0, 0, 2]
-      ];
-      
+      ],
+      9: [
+        [5, 3, 0, 0, 7, 0, 0, 0, 0],
+        [6, 0, 0, 1, 9, 5, 0, 0, 0],
+        [0, 9, 8, 0, 0, 0, 0, 6, 0],
+        [8, 0, 0, 0, 6, 0, 0, 0, 3],
+        [4, 0, 0, 8, 0, 3, 0, 0, 1],
+        [7, 0, 0, 0, 2, 0, 0, 0, 6],
+        [0, 6, 0, 0, 0, 0, 2, 8, 0],
+        [0, 0, 0, 4, 1, 9, 0, 0, 5],
+        [0, 0, 0, 0, 8, 0, 0, 7, 9]
+      ]
+    };
+
+    try {
+      const initialGrid = grids[sudokuSize];
       const gameId = `sudoku_${Date.now()}`;
-      console.log('Admin - Game ID:', gameId);
-      
+
       await createGame(gameId, 'sudoku', {
         grid: initialGrid.map(row => [...row]),
         initialGrid: initialGrid,
-        name: sudokuName || `Sudoku ${new Date().toLocaleDateString()}`,
+        gridSize: sudokuSize,
+        name: sudokuName || `Sudoku ${sudokuSize}×${sudokuSize} ${new Date().toLocaleDateString()}`,
         description: sudokuDescription || ''
       });
-      
-      console.log('Admin - Sudoku créé avec succès !');
-      setMessage(`✅ Sudoku "${sudokuName || 'Sans nom'}" créé !\n\nLes équipes le verront dans la liste des Sudokus disponibles.`);
+
+      setMessage(`✅ Sudoku ${sudokuSize}×${sudokuSize} "${sudokuName || 'Sans nom'}" créé !`);
       setSudokuName('');
       setSudokuDescription('');
       setTimeout(() => setMessage(''), 10000);
@@ -274,6 +292,45 @@ const Admin = () => {
       });
       setMessage(`✅ Configuration de l'Alchimie sauvegardée ! ${craftBasePoints} pts de base + bonus sur ${craftBonusElements.length} éléments.`);
       setTimeout(() => setMessage(''), 5000);
+    } catch (error) {
+      setMessage(`❌ Erreur : ${error.message}`);
+    }
+  };
+
+  const handleAddQuizQuestion = () => {
+    setQuizQuestions([...quizQuestions, { question: '', answer: '', points: 20 }]);
+  };
+
+  const handleRemoveQuizQuestion = (index) => {
+    setQuizQuestions(quizQuestions.filter((_, i) => i !== index));
+  };
+
+  const handleQuizQuestionChange = (index, field, value) => {
+    const updated = [...quizQuestions];
+    updated[index][field] = field === 'points' ? parseInt(value) || 20 : value;
+    setQuizQuestions(updated);
+  };
+
+  const handleCreateQuiz = async () => {
+    const valid = quizQuestions.filter(q => q.question.trim() && q.answer.trim());
+    if (valid.length < 3) {
+      setMessage('❌ Veuillez entrer au moins 3 questions avec leurs réponses');
+      return;
+    }
+    try {
+      const questions = valid.map((q, i) => ({
+        id: `q${i}`,
+        question: q.question.trim(),
+        answer: q.answer.trim(),
+        points: q.points || 20,
+      }));
+      const gameId = `quiz_${Date.now()}`;
+      await createGame(gameId, 'quiz', {
+        questions,
+        name: quizName || 'Quiz Généalogie',
+      });
+      setMessage(`✅ Quiz "${quizName}" créé avec ${questions.length} questions !`);
+      setTimeout(() => setMessage(''), 10000);
     } catch (error) {
       setMessage(`❌ Erreur : ${error.message}`);
     }
@@ -612,8 +669,8 @@ const Admin = () => {
           <div className="space-y-6">
             {/* Sudoku */}
             <div className="border-2 border-purple-200 rounded-lg p-4">
-              <h3 className="font-bold text-lg mb-3 text-purple-800">Sudoku 4x4</h3>
-              
+              <h3 className="font-bold text-lg mb-3 text-purple-800">Sudoku</h3>
+
               <div className="space-y-3 mb-3">
                 <input
                   type="text"
@@ -629,13 +686,30 @@ const Admin = () => {
                   onChange={(e) => setSudokuDescription(e.target.value)}
                   className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                 />
+
+                {/* Choix de la taille */}
+                <div className="flex gap-3">
+                  {[4, 9].map(size => (
+                    <button
+                      key={size}
+                      onClick={() => setSudokuSize(size)}
+                      className={`flex-1 py-2 px-4 rounded-lg font-bold border-2 transition-all ${
+                        sudokuSize === size
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-white text-purple-600 border-purple-300 hover:border-purple-600'
+                      }`}
+                    >
+                      {size}×{size}
+                    </button>
+                  ))}
+                </div>
               </div>
-              
+
               <button
                 onClick={handleCreateSudoku}
                 className="w-full py-3 px-6 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition-all"
               >
-                🧩 Créer le Sudoku
+                🧩 Créer le Sudoku {sudokuSize}×{sudokuSize}
               </button>
             </div>
 
@@ -827,6 +901,80 @@ const Admin = () => {
                   3. Placez votre fichier dans <code className="bg-white px-1 rounded">public/games/{guessType === 'image' ? 'images' : 'audio'}/</code>
                 </p>
               </div>
+            </div>
+
+            {/* Quiz Généalogie */}
+            <div className="border-2 border-rose-200 rounded-lg p-4">
+              <h3 className="font-bold text-lg mb-3 text-rose-800">🌳 Quiz Généalogie</h3>
+
+              <div className="space-y-3 mb-4">
+                <input
+                  type="text"
+                  placeholder="Nom du quiz"
+                  value={quizName}
+                  onChange={(e) => setQuizName(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="space-y-2 mb-4 max-h-96 overflow-y-auto pr-1">
+                {quizQuestions.map((q, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-500">Question {index + 1}</span>
+                      <button
+                        onClick={() => handleRemoveQuizQuestion(index)}
+                        className="text-red-400 hover:text-red-600 text-sm font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Question (ex: Quel est le prénom de la mère du marié ?)"
+                      value={q.question}
+                      onChange={(e) => handleQuizQuestionChange(index, 'question', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-rose-500 text-sm mb-2"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Réponse exacte"
+                        value={q.answer}
+                        onChange={(e) => handleQuizQuestionChange(index, 'answer', e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-rose-500 text-sm"
+                      />
+                      <input
+                        type="number"
+                        value={q.points}
+                        min="5"
+                        max="100"
+                        onChange={(e) => handleQuizQuestionChange(index, 'points', e.target.value)}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-rose-500 text-sm text-center"
+                      />
+                      <span className="self-center text-xs text-gray-500">pts</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleAddQuizQuestion}
+                className="w-full py-2 px-4 border-2 border-dashed border-rose-300 text-rose-600 rounded-lg font-bold hover:bg-rose-50 transition-all mb-3"
+              >
+                + Ajouter une question
+              </button>
+
+              <button
+                onClick={handleCreateQuiz}
+                disabled={quizQuestions.filter(q => q.question.trim() && q.answer.trim()).length < 3}
+                className="w-full py-3 px-6 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                🌳 Créer le quiz ({quizQuestions.filter(q => q.question.trim() && q.answer.trim()).length} questions)
+              </button>
+              <p className="text-xs text-gray-500 mt-2">
+                💡 La validation des réponses ignore les majuscules et les accents.
+              </p>
             </div>
 
           </div>

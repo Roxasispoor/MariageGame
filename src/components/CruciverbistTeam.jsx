@@ -133,7 +133,7 @@ const CruciverbistTeam = ({ gameId, teamId }) => {
       const newValidatedWords = [...validatedWords, selectedWord.id];
       setValidatedWords(newValidatedWords);
       
-      const points = 10;
+      const points = 20;
       await saveTeamGameProgress(teamId, gameId, 'crossword', {
         validatedWords: newValidatedWords,
         completed: newValidatedWords.length === masterData.words.length

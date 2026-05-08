@@ -31,7 +31,7 @@ export const getGameConfig = async () => {
   }
   // Créer une config par défaut si elle n'existe pas
   const defaultConfig = {
-    ransomGoal: 1000,
+    ransomGoal: 5000,
     ransomMessage: "Payez la rançon pour libérer les mariés !",
     ransomCompleted: false
   };
@@ -264,21 +264,23 @@ const gridToObject = (grid) => {
   return obj;
 };
 
-// Convertir un objet Firestore en grille 2D
-const objectToGrid = (obj, size = 4) => {
-  if (!obj) {
-    console.error('objectToGrid - obj est null ou undefined:', obj);
-    return Array(size).fill(null).map(() => Array(size).fill(0));
+// Convertir un objet Firestore en grille 2D (taille auto-détectée depuis les clés)
+const objectToGrid = (obj, size = null) => {
+  if (!obj) return Array(9).fill(null).map(() => Array(9).fill(0));
+
+  if (!size) {
+    let maxIdx = 0;
+    Object.keys(obj).forEach(key => {
+      const match = key.match(/r(\d+)c(\d+)/);
+      if (match) maxIdx = Math.max(maxIdx, parseInt(match[1]), parseInt(match[2]));
+    });
+    size = maxIdx + 1 || 9;
   }
-  
+
   const grid = Array(size).fill(null).map(() => Array(size).fill(0));
   Object.keys(obj).forEach(key => {
     const match = key.match(/r(\d+)c(\d+)/);
-    if (match) {
-      const row = parseInt(match[1]);
-      const col = parseInt(match[2]);
-      grid[row][col] = obj[key];
-    }
+    if (match) grid[parseInt(match[1])][parseInt(match[2])] = obj[key];
   });
   return grid;
 };
@@ -716,7 +718,7 @@ export const createGlobalEvent = async (type, amount, message) => {
     // Créer la config avec l'offset
     await setDoc(configRef, {
       globalOffset: amount,
-      ransomGoal: 1000,
+      ransomGoal: 5000,
       ransomMessage: "Payez la rançon pour libérer les mariés !",
       ransomCompleted: false
     });

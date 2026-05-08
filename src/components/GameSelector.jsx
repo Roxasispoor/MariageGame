@@ -90,18 +90,21 @@ const GameSelector = ({ gameType, teamId, onSelect, onBack }) => {
     }
     
     if (gameType === 'progressive-guess') {
-      // Pour devine l'image, basé sur la complétion
-      if (progressData.progress?.completed) {
-        return { percent: 100, completed: true };
-      }
-      
+      if (progressData.progress?.completed) return { percent: 100, completed: true };
       const revealed = progressData.progress?.revealedCells?.length || 0;
+      return { percent: Math.round((revealed / 9) * 100), completed: false };
+    }
+
+    if (gameType === 'quiz') {
+      const answered = progressData.progress?.answeredIds?.length || 0;
+      const total = game.state?.questions?.length || 0;
+      if (total === 0) return { percent: 0, completed: false };
       return {
-        percent: Math.round((revealed / 9) * 100),
-        completed: false
+        percent: Math.round((answered / total) * 100),
+        completed: answered === total,
       };
     }
-    
+
     return { percent: 0, completed: false };
   };
 
@@ -139,6 +142,7 @@ const GameSelector = ({ gameType, teamId, onSelect, onBack }) => {
       case 'sudoku': return '🧩 Sudoku';
       case 'crossword': return '📝 Mots Croisés';
       case 'progressive-guess': return '🔍 Devine';
+      case 'quiz': return '🌳 Quiz Généalogie';
       default: return 'Jeux';
     }
   };

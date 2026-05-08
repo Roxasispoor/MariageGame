@@ -9,6 +9,7 @@ import CoopSudoku from '../components/CoopSudokuTeam';
 import Cruciverbist from '../components/CruciverbistTeam';
 import InfiniteCraft from '../components/InfiniteCraft';
 import ProgressiveGuess from '../components/ProgressiveGuess';
+import GenealogieQuiz from '../components/GenealogieQuiz';
 
 const TeamView = ({ teamId }) => {
   const { team, loading } = useTeam(teamId);
@@ -79,6 +80,9 @@ const TeamView = ({ teamId }) => {
           )}
           {selectedGameType === 'alchemy' && (
             <InfiniteCraft teamId={teamId} />
+          )}
+          {selectedGameType === 'quiz' && (
+            <GenealogieQuiz gameId={selectedGame.id} teamId={teamId} />
           )}
         </div>
       </div>
@@ -161,6 +165,15 @@ const TeamView = ({ teamId }) => {
                 setSelectedGameType('alchemy');
                 setSelectedGame({ id: 'alchemy', type: 'alchemy' });
               }}
+            />
+
+            {/* Quiz Généalogie */}
+            <GameButton
+              icon="🌳"
+              title="Quiz Généalogie"
+              description="Explorez l'arbre familial des mariés"
+              completed={false}
+              onClick={() => setSelectedGameType('quiz')}
             />
           </div>
         </div>
