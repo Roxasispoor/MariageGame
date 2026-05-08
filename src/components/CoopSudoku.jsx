@@ -23,7 +23,8 @@ const CoopSudoku = ({ gameId, teamId }) => {
           setLoading(false);
           return;
         }
-        setGrid(gameData.state.grid);
+        // grid = solution, initialGrid = disposition initiale (cases vides = 0)
+        setGrid(gameData.state.initialGrid || gameData.state.grid);
         setGridSize(gameData.state.gridSize || gameData.state.grid.length || 9);
         if (!initialGrid) {
           setInitialGrid(gameData.state.initialGrid);

@@ -126,39 +126,14 @@ const CoopSudoku = ({ gameId, teamId }) => {
     setSaveTimeout(timeout);
   };
 
-  const validateSudoku = (grid) => {
-    const size = gridSize;
-    const boxSize = Math.sqrt(size);
-
-    // Vérifier les lignes
-    for (let i = 0; i < size; i++) {
-      const row = new Set(grid[i].filter(n => n !== 0));
-      if (row.size !== size) return false;
-    }
-
-    // Vérifier les colonnes
-    for (let j = 0; j < size; j++) {
-      const col = new Set();
-      for (let i = 0; i < size; i++) {
-        if (grid[i][j] !== 0) col.add(grid[i][j]);
-      }
-      if (col.size !== size) return false;
-    }
-
-    // Vérifier les blocs 3x3
-    for (let blockRow = 0; blockRow < boxSize; blockRow++) {
-      for (let blockCol = 0; blockCol < boxSize; blockCol++) {
-        const block = new Set();
-        for (let i = 0; i < boxSize; i++) {
-          for (let j = 0; j < boxSize; j++) {
-            const val = grid[blockRow * boxSize + i][blockCol * boxSize + j];
-            if (val !== 0) block.add(val);
-          }
-        }
-        if (block.size !== size) return false;
+  // Valide en comparant case par case à la solution (masterGrid = grid stockée dans Firebase)
+  const validateSudoku = (teamG) => {
+    if (!masterGrid) return false;
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        if (teamG[i][j] !== masterGrid[i][j]) return false;
       }
     }
-
     return true;
   };
 

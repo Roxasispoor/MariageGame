@@ -91,8 +91,11 @@ const GameSelector = ({ gameType, teamId, onSelect, onBack }) => {
     
     if (gameType === 'progressive-guess') {
       if (progressData.progress?.completed) return { percent: 100, completed: true };
-      const revealed = progressData.progress?.revealedCells?.length || 0;
-      return { percent: Math.round((revealed / 9) * 100), completed: false };
+      // Compatibilité ancien format (revealedCells) et nouveau (pixelLevel)
+      const level = progressData.progress?.pixelLevel
+        ?? progressData.progress?.revealedCells?.length
+        ?? 0;
+      return { percent: Math.round((level / 9) * 100), completed: false };
     }
 
     if (gameType === 'quiz') {

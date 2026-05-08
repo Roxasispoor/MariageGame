@@ -567,17 +567,11 @@ export const migrateOldTeams = async () => {
  */
 
 // Créer une configuration de jeu craft
-export const createCraftConfig = async (rewardElements) => {
-  /*
-  rewardElements = [
-    { id: 'mariage', points: 50 },
-    { id: 'amour', points: 30 },
-    ...
-  ]
-  */
+export const createCraftConfig = async (config) => {
   const configRef = doc(configCollection, 'craft');
   await setDoc(configRef, {
-    rewardElements: rewardElements,
+    basePoints: config.basePoints ?? 5,
+    bonusElements: config.bonusElements ?? [],
     createdAt: new Date()
   });
 };
@@ -586,10 +580,22 @@ export const createCraftConfig = async (rewardElements) => {
 export const getCraftConfig = async () => {
   const configRef = doc(configCollection, 'craft');
   const snap = await getDoc(configRef);
-  if (snap.exists()) {
-    return snap.data();
+  if (!snap.exists()) return { basePoints: 5, bonusElements: [] };
+
+  const data = snap.data();
+
+  // Ancien format : config imbriquée sous rewardElements
+  if (data.rewardElements && !data.basePoints) {
+    return {
+      basePoints: data.rewardElements.basePoints ?? 5,
+      bonusElements: data.rewardElements.bonusElements ?? [],
+    };
   }
-  return { rewardElements: [] };
+
+  return {
+    basePoints: data.basePoints ?? 5,
+    bonusElements: data.bonusElements ?? [],
+  };
 };
 
 // Mettre à jour les découvertes d'une équipe
