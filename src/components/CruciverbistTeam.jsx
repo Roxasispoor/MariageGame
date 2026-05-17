@@ -141,7 +141,7 @@ const CruciverbistTeam = ({ gameId, teamId }) => {
       
       await addPoints(teamId, points);
       
-      setMessage(`✅ Correct ! +${points} Triceracoins`);
+      setMessage(`✅ Correct ! +${points} grue${points > 1 ? 's' : ''} 🕊️`);
       setSelectedWord(null);
       setCurrentInput('');
       

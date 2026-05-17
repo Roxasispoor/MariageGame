@@ -11,7 +11,7 @@ const Admin = () => {
   const [codePoints, setCodePoints] = useState(15);
   const [codeDescription, setCodeDescription] = useState('');
   const [ransomGoal, setRansomGoalInput] = useState(5000);
-  const [ransomMessage, setRansomMessage] = useState('Payez la rançon pour libérer les mariés !');
+  const [ransomMessage, setRansomMessage] = useState('Réunissez des grues pour offrir un vœu aux mariés !');
   const [message, setMessage] = useState('');
   
   // État pour le Sudoku
@@ -148,7 +148,7 @@ const Admin = () => {
     e.preventDefault();
     try {
       await setRansomGoal(ransomGoal, ransomMessage);
-      setMessage(`✅ Objectif de rançon configuré : ${ransomGoal} points`);
+      setMessage(`✅ Objectif de vœu configuré : ${ransomGoal} grues`);
       setTimeout(() => setMessage(''), 5000);
     } catch (error) {
       setMessage('❌ Erreur lors de la configuration');
@@ -296,7 +296,7 @@ const Admin = () => {
       await createGlobalEvent(eventType, amount, eventMessage);
 
       const eventName = eventType === 'thief' ? 'Voleur' : 'Donateur';
-      setMessage(`✅ Événement "${eventName}" déclenché !\n\n${eventMessage}\nMontant: ${amount > 0 ? '+' : ''}${amount} Triceracoins\n\nToutes les équipes verront la notification.`);
+      setMessage(`✅ Événement "${eventName}" déclenché !\n\n${eventMessage}\nMontant: ${amount > 0 ? '+' : ''}${amount} grues 🕊️\n\nToutes les équipes verront la notification.`);
       
       setTimeout(() => setMessage(''), 10000);
     } catch (error) {
@@ -436,7 +436,7 @@ const Admin = () => {
                   value={ransomMessage}
                   onChange={(e) => setRansomMessage(e.target.value)}
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary"
-                  placeholder="Payez la rançon pour libérer les mariés !"
+                  placeholder="Réunissez des grues pour offrir un vœu aux mariés !"
                 />
               </div>
             </div>
@@ -455,7 +455,7 @@ const Admin = () => {
             🎭 Déclencher un événement
           </h2>
           <p className="text-sm text-gray-600 mb-4">
-            Ajustez la progression en volant ou en ajoutant des Triceracoins au butin collectif
+            Ajustez la progression en volant ou en ajoutant des grues 🕊️ au compteur collectif
           </p>
 
           <div className="space-y-4">
@@ -479,7 +479,7 @@ const Admin = () => {
                 >
                   <div className="text-3xl mb-1">🦹</div>
                   <div className="font-bold">Voleur</div>
-                  <div className="text-xs">Retirer des Triceracoins</div>
+                  <div className="text-xs">Retirer des grues</div>
                 </button>
                 
                 <button
@@ -496,7 +496,7 @@ const Admin = () => {
                 >
                   <div className="text-3xl mb-1">🎅</div>
                   <div className="font-bold">Donateur</div>
-                  <div className="text-xs">Ajouter des Triceracoins</div>
+                  <div className="text-xs">Ajouter des grues</div>
                 </button>
               </div>
             </div>
@@ -504,7 +504,7 @@ const Admin = () => {
             {/* Montant */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Montant de Triceracoins
+                Nombre de grues 🕊️
               </label>
               <input
                 type="number"
@@ -515,7 +515,7 @@ const Admin = () => {
                 placeholder="50"
               />
               <p className="text-xs text-gray-500 mt-1">
-                {eventType === 'thief' ? '❌ Sera retiré' : '✅ Sera ajouté'} au butin collectif
+                {eventType === 'thief' ? '❌ Sera retiré' : '✅ Sera ajouté'} au compteur de grues collectif
               </p>
             </div>
 
@@ -550,7 +550,7 @@ const Admin = () => {
                     {eventMessage}
                   </span>
                   <span className={`font-bold ${eventType === 'thief' ? 'text-red-800' : 'text-green-800'}`}>
-                    {eventType === 'thief' ? '-' : '+'}{eventAmount} 🦖
+                    {eventType === 'thief' ? '-' : '+'}{eventAmount} 🕊️
                   </span>
                 </div>
               </div>
@@ -911,7 +911,8 @@ const Admin = () => {
               </button>
 
               <p className="text-sm text-gray-600 mt-2">
-                💡 Barème : 100→80→60→50→40→30→20→15→10→5 Triceracoins selon cases révélées
+                💡 Barème image : 10→9→8→7→6→5→4→2→1 grues (9 niveaux de pixelisation)<br/>
+                💡 Barème audio : 10→7→5→3→1 grues (5s / +5s / +10s / +20s / complet)
               </p>
               
               <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">

@@ -32,7 +32,7 @@ export const getGameConfig = async () => {
   // Créer une config par défaut si elle n'existe pas
   const defaultConfig = {
     ransomGoal: 5000,
-    ransomMessage: "Payez la rançon pour libérer les mariés !",
+    ransomMessage: "Réunissez des grues pour offrir un vœu aux mariés !",
     ransomCompleted: false
   };
   await setDoc(configRef, defaultConfig);
@@ -44,7 +44,7 @@ export const setRansomGoal = async (goal, message) => {
   const configRef = doc(configCollection, 'game');
   await setDoc(configRef, {
     ransomGoal: goal,
-    ransomMessage: message || "Payez la rançon pour libérer les mariés !",
+    ransomMessage: message || "Réunissez des grues pour offrir un vœu aux mariés !",
     ransomCompleted: false
   }, { merge: true });
 };
@@ -725,7 +725,7 @@ export const createGlobalEvent = async (type, amount, message) => {
     await setDoc(configRef, {
       globalOffset: amount,
       ransomGoal: 5000,
-      ransomMessage: "Payez la rançon pour libérer les mariés !",
+      ransomMessage: "Réunissez des grues pour offrir un vœu aux mariés !",
       ransomCompleted: false
     });
   }

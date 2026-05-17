@@ -151,7 +151,7 @@ const CoopSudoku = ({ gameId, teamId }) => {
       });
 
       await addPoints(teamId, points);
-      alert(`🎉 Bravo ! Sudoku résolu ! +${points} Triceracoins !`);
+      alert(`🎉 Bravo ! Sudoku résolu ! +${points} grue${points > 1 ? 's' : ''} !`);
     } else {
       alert('❌ Pas encore correct... Continuez !');
     }

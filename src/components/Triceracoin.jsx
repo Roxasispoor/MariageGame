@@ -12,14 +12,14 @@ const Triceracoin = ({ amount, size = 'md', showLabel = true, textColor = 'text-
 
   return (
     <div className="inline-flex items-center gap-2">
-      <img 
-        src="/assets/triceracoin.png" 
-        alt="Triceracoin" 
+      <img
+        src="/assets/grue.png"
+        alt="Grue en papier"
         className={`${sizeClasses.img} object-contain`}
       />
       {showLabel && (
         <span className={`font-bold ${textColor} ${sizeClasses.text}`}>
-          {amount?.toLocaleString() || 0}
+          {amount?.toLocaleString() || 0} grue{amount > 1 ? 's' : ''}
         </span>
       )}
     </div>
